@@ -17,7 +17,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class Operation(private val coreO: core.Operation, private val account: Account, private val wallet: Wallet) extends Logging {
   private[this] val self = this
   implicit val ec: ExecutionContext = MDCPropagatingExecutionContext.Implicits.global
-  val currencyFamily: CurrencyFamily = CurrencyFamily.valueOf(coreO.getWalletType.name())
+  val currencyFamily: core.WalletType = coreO.getWalletType
   val uid: String = coreO.getUid
   val time: Date = coreO.getDate
   val opType: OperationType = OperationType.valueOf(coreO.getOperationType.name())
@@ -54,10 +54,10 @@ class Operation(private val coreO: core.Operation, private val account: Account,
       }
     }
 
-  private def newTransactionView(operation: core.Operation, currencyFamily: CurrencyFamily): TransactionView = {
+  private def newTransactionView(operation: core.Operation, currencyFamily: core.WalletType): TransactionView = {
     if(operation.isComplete) {
       currencyFamily match {
-        case CurrencyFamily.BITCOIN => Bitcoin.newTransactionView(operation.asBitcoinLikeOperation().getTransaction)
+        case core.WalletType.BITCOIN => Bitcoin.newTransactionView(operation.asBitcoinLikeOperation().getTransaction)
         case _ => throw new UnsupportedOperationException
       }
     } else { null }
@@ -92,7 +92,7 @@ object Operation {
 case class OperationView(
                           @JsonProperty("uid") uid: String,
                           @JsonProperty("currency_name") currencyName: String,
-                          @JsonProperty("currency_family") currencyFamily: CurrencyFamily,
+                          @JsonProperty("currency_family") currencyFamily: core.WalletType,
                           @JsonProperty("trust") trust: Option[TrustIndicatorView],
                           @JsonProperty("confirmations") confirmations: Long,
                           @JsonProperty("time") time: Date,
