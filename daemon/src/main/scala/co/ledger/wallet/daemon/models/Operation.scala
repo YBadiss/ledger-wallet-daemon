@@ -20,7 +20,7 @@ class Operation(private val coreO: core.Operation, private val account: Account,
   val currencyFamily: core.WalletType = coreO.getWalletType
   val uid: String = coreO.getUid
   val time: Date = coreO.getDate
-  val opType: OperationType = OperationType.valueOf(coreO.getOperationType.name())
+  val opType: core.OperationType = coreO.getOperationType
   val amount: Long = coreO.getAmount.toLong
   val senders: Seq[String] = coreO.getSenders.asScala
   val recipients: Seq[String] = coreO.getRecipients.asScala
@@ -64,7 +64,7 @@ class Operation(private val coreO: core.Operation, private val account: Account,
   }
 
   private def newTrustIndicatorView(trust: core.TrustIndicator): TrustIndicatorView = {
-    TrustIndicatorView(trust.getTrustWeight, TrustLevel.valueOf(trust.getTrustLevel.name()), trust.getConflictingOperationUids.asScala, trust.getOrigin)
+    TrustIndicatorView(trust.getTrustWeight, trust.getTrustLevel, trust.getConflictingOperationUids.asScala, trust.getOrigin)
   }
 
   override def equals(that: Any): Boolean = {
@@ -97,7 +97,7 @@ case class OperationView(
                           @JsonProperty("confirmations") confirmations: Long,
                           @JsonProperty("time") time: Date,
                           @JsonProperty("block_height") blockHeight: Option[Long],
-                          @JsonProperty("type") opType: OperationType,
+                          @JsonProperty("type") opType: core.OperationType,
                           @JsonProperty("amount") amount: Long,
                           @JsonProperty("fees") fees: Long,
                           @JsonProperty("wallet_name") walletName: String,
@@ -109,7 +109,7 @@ case class OperationView(
 
 case class TrustIndicatorView(
                              @JsonProperty("weight") weight: Int,
-                             @JsonProperty("level") level: TrustLevel,
+                             @JsonProperty("level") level: core.TrustLevel,
                              @JsonProperty("conflicted_operations") conflictedOps: Seq[String],
                              @JsonProperty("origin") origin: String
                              )
