@@ -7,8 +7,7 @@ import co.ledger.wallet.daemon.async.MDCPropagatingExecutionContext
 import co.ledger.wallet.daemon.models.Account.Account
 import co.ledger.wallet.daemon.models.coins.Bitcoin
 import co.ledger.wallet.daemon.models.coins.Coin.TransactionView
-import com.fasterxml.jackson.annotation.JsonInclude.Include
-import com.fasterxml.jackson.annotation.{JsonInclude, JsonProperty}
+import com.fasterxml.jackson.annotation.JsonProperty
 import com.twitter.inject.Logging
 
 import scala.collection.JavaConverters._
@@ -27,7 +26,7 @@ class Operation(private val coreO: core.Operation, private val account: Account,
   val fees: Long = coreO.getFees.toLong
   val blockHeight: Option[Long] = if (coreO.getBlockHeight == null) None else Option(coreO.getBlockHeight)
   lazy val trustView: Option[TrustIndicatorView] = Option(coreO.getTrust).map (trust => newTrustIndicatorView(trust))
-  lazy val transactionView: TransactionView = newTransactionView(coreO, currencyFamily)
+  lazy val transactionView: Option[TransactionView] = newTransactionView(coreO, currencyFamily)
 
   def operationView: Future[OperationView] =
     confirmations(wallet).map(OperationView(
@@ -54,13 +53,13 @@ class Operation(private val coreO: core.Operation, private val account: Account,
       }
     }
 
-  private def newTransactionView(operation: core.Operation, currencyFamily: core.WalletType): TransactionView = {
+  private def newTransactionView(operation: core.Operation, currencyFamily: core.WalletType): Option[TransactionView] = {
     if(operation.isComplete) {
       currencyFamily match {
-        case core.WalletType.BITCOIN => Bitcoin.newTransactionView(operation.asBitcoinLikeOperation().getTransaction)
+        case core.WalletType.BITCOIN => Some(Bitcoin.newTransactionView(operation.asBitcoinLikeOperation().getTransaction))
         case _ => throw new UnsupportedOperationException
       }
-    } else { null }
+    } else { Option.empty[TransactionView] }
   }
 
   private def newTrustIndicatorView(trust: core.TrustIndicator): TrustIndicatorView = {
@@ -104,7 +103,7 @@ case class OperationView(
                           @JsonProperty("account_index") accountIndex: Int,
                           @JsonProperty("senders") senders: Seq[String],
                           @JsonProperty("recipients") recipients: Seq[String],
-                          @JsonProperty("transaction") @JsonInclude(Include.NON_NULL) transaction: TransactionView
+                          @JsonProperty("transaction") transaction: Option[TransactionView]
                         )
 
 case class TrustIndicatorView(
