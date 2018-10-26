@@ -106,10 +106,10 @@ class Wallet(private val coreW: core.Wallet, private val pool: Pool) extends Log
   def addAccountIfNotExit(accountDerivations: AccountDerivationView): Future[Account] = {
     val accountCreationInfo = new core.AccountCreationInfo(
       accountDerivations.accountIndex,
-      (for (derivationResult <- accountDerivations.derivations) yield derivationResult.owner).asArrayList,
-      (for (derivationResult <- accountDerivations.derivations) yield derivationResult.path).asArrayList,
-      (for (derivationResult <- accountDerivations.derivations) yield HexUtils.valueOf(derivationResult.pubKey.get)).asArrayList,
-      (for (derivationResult <- accountDerivations.derivations) yield HexUtils.valueOf(derivationResult.chainCode.get)).asArrayList
+      accountDerivations.derivations.map(_.owner).asArrayList,
+      accountDerivations.derivations.map(_.path).asArrayList,
+      accountDerivations.derivations.map(d => HexUtils.valueOf(d.pubKey.get)).asArrayList,
+      accountDerivations.derivations.map(d => HexUtils.valueOf(d.chainCode.get)).asArrayList
     )
     accountCreationInfo.getOwners.asScala.foreach(o => println(s"Owner: $o"))
     accountCreationEpilogue(coreW.newAccountWithInfo(accountCreationInfo), accountDerivations.accountIndex)
