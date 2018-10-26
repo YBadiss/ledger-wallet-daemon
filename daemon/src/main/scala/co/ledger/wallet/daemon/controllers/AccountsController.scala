@@ -167,7 +167,7 @@ class AccountsController @Inject()(accountsService: AccountsService) extends Con
     * End point queries for operation view with specified uid.
     *
     */
-  get("/pools/:pool_name/wallets/:wallet_name/accounts/:account_index/operations/:uid") { request: OperationResult =>
+  get("/pools/:pool_name/wallets/:wallet_name/accounts/:account_index/operations/:uid") { request: OperationRequest =>
     info(s"GET account operation $request")
     accountsService.accountOperation(request.user, request.uid, request.account_index, request.pool_name, request.wallet_name, request.full_op).map {
       case Some(view) => responseSerializer.serializeOk(view, response)
@@ -327,7 +327,7 @@ object AccountsController {
       s"full_op: $full_op)"
   }
 
-  case class OperationResult(
+  case class OperationRequest(
                             @RouteParam override val pool_name: String,
                             @RouteParam override val wallet_name: String,
                             @RouteParam override val account_index: Int,
