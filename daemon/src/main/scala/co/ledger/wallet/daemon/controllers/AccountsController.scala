@@ -1,8 +1,8 @@
 package co.ledger.wallet.daemon.controllers
 
 import java.util.UUID
-import javax.inject.Inject
 
+import co.ledger.core.TimePeriod
 import co.ledger.wallet.daemon.async.MDCPropagatingExecutionContext
 import co.ledger.wallet.daemon.controllers.requests.{CommonMethodValidations, RichRequest}
 import co.ledger.wallet.daemon.controllers.responses.ResponseSerializer
@@ -16,6 +16,7 @@ import com.twitter.finagle.http.Request
 import com.twitter.finatra.http.Controller
 import com.twitter.finatra.request.{QueryParam, RouteParam}
 import com.twitter.finatra.validation.{MethodValidation, ValidationResult}
+import javax.inject.Inject
 
 import scala.concurrent.ExecutionContext
 
@@ -187,6 +188,26 @@ class AccountsController @Inject()(accountsService: AccountsService) extends Con
   }
 
   /**
+    * Return the balances history in the order of the starting time to the end time.
+    *
+    */
+  get("/pools/:pool_name/wallets/:wallet_name/accounts/:account_index/balances") { request: BalanceHistoryRequest =>
+    info(s"Get balance history $request")
+    accountsService.balances(request.start, request.end, request.timePeriod, request.account_index, request.user, request.pool_name, request.wallet_name).recover {
+      case _: WalletPoolNotFoundException => responseSerializer.serializeBadRequest(
+        Map("response" -> "Wallet pool doesn't exist", "pool_name" -> request.pool_name),
+        response)
+      case _: WalletNotFoundException => responseSerializer.serializeBadRequest(
+        Map("response"->"Wallet doesn't exist", "wallet_name" -> request.wallet_name),
+        response)
+      case _: AccountNotFoundException => responseSerializer.serializeBadRequest(
+        Map("response"->"Account doesn't exist", "account_index" -> request.account_index),
+        response)
+      case e: Throwable => responseSerializer.serializeInternalError(response, e)
+    }
+  }
+
+  /**
     * Synchronize a single account
     */
   post("/pools/:pool_name/wallets/:wallet_name/accounts/:account_index/operations/synchronize") { request: AccountRequest =>
@@ -270,6 +291,23 @@ object AccountsController {
     def validateAccountIndex: ValidationResult = ValidationResult.validate(account_index >= 0, "account_index: index can not be less than zero")
 
     override def toString: String = s"$request, Parameters(user: ${user.id}, pool_name: $pool_name, wallet_name: $wallet_name, account_index: $account_index)"
+  }
+
+  case class BalanceHistoryRequest(
+                                    @RouteParam override val pool_name: String,
+                                    @RouteParam override val wallet_name: String,
+                                    @RouteParam override val account_index: Int,
+                                    @QueryParam start: String, @QueryParam end: String, @QueryParam timeInterval: String,
+                                    request: Request
+                                  ) extends BaseSingleAccountRequest(request) {
+
+    def timePeriod: TimePeriod = TimePeriod.valueOf(timeInterval)
+
+    @MethodValidation
+    def validateDate: ValidationResult = CommonMethodValidations.validateDates(start, end)
+
+    @MethodValidation
+    def validateTimePeriod: ValidationResult = CommonMethodValidations.validateTimePeriod(timeInterval)
   }
 
   case class AccountRequest(

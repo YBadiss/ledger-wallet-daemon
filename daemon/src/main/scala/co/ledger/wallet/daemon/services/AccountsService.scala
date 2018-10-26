@@ -2,6 +2,8 @@ package co.ledger.wallet.daemon.services
 
 import java.util.UUID
 
+import co.ledger.core.TimePeriod
+import co.ledger.core.implicits.AccountNotFoundException
 import javax.inject.{Inject, Singleton}
 import co.ledger.wallet.daemon.async.MDCPropagatingExecutionContext
 import co.ledger.wallet.daemon.database.DaemonCache
@@ -25,6 +27,14 @@ class AccountsService @Inject()(defaultDaemonCache: DaemonCache) extends DaemonS
     defaultDaemonCache.getAccount(accountIndex, user.pubKey, poolName, walletName).flatMap {
       case Some(account) => account.accountView.map(Option(_))
       case None => Future(None)
+    }
+  }
+
+  def balances(start: String, end: String, timePeriod: TimePeriod, accountIndex: Int, user: User, poolName: String, walletName: String): Future[List[Long]] = {
+    defaultDaemonCache.getAccount(accountIndex, user.pubKey, poolName, walletName).flatMap { accountOpt =>
+      accountOpt
+        .getOrElse(throw new AccountNotFoundException(s"Account '$accountIndex' from wallet '$walletName' in pool '$poolName'"))
+        .balances(start, end, timePeriod)
     }
   }
 

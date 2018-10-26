@@ -108,6 +108,12 @@ object Account {
         operations.asScala.toList.groupBy(op => op.getOperationType).map { case (optType, opts) => (optType, opts.size)}
       }
 
+    def balances(start: String, end: String, timePeriod: core.TimePeriod): Future[List[Long]] = {
+      coreA.getBalanceHistory(start, end, timePeriod).map { balances =>
+        balances.asScala.toList.map { ba => ba.toLong }
+      }
+    }
+
     def freshAddresses(): Future[Seq[String]] = {
       coreA.getFreshPublicAddresses().map(_.asScala.map(_.toString))
     }
