@@ -2,14 +2,13 @@ package co.ledger.wallet.daemon.services
 
 import java.util.UUID
 
-import co.ledger.core.TimePeriod
-import co.ledger.core.implicits.AccountNotFoundException
-import javax.inject.{Inject, Singleton}
 import co.ledger.wallet.daemon.async.MDCPropagatingExecutionContext
 import co.ledger.wallet.daemon.database.DaemonCache
 import co.ledger.wallet.daemon.database.DefaultDaemonCache.User
+import co.ledger.wallet.daemon.models.Account.Account
 import co.ledger.wallet.daemon.models._
 import co.ledger.wallet.daemon.schedulers.observers.SynchronizationResult
+import javax.inject.{Inject, Singleton}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -30,16 +29,12 @@ class AccountsService @Inject()(defaultDaemonCache: DaemonCache) extends DaemonS
     }
   }
 
-  def balances(start: String, end: String, timePeriod: TimePeriod, accountIndex: Int, user: User, poolName: String, walletName: String): Future[List[Long]] = {
-    defaultDaemonCache.getAccount(accountIndex, user.pubKey, poolName, walletName).flatMap { accountOpt =>
-      accountOpt
-        .getOrElse(throw new AccountNotFoundException(s"Account '$accountIndex' from wallet '$walletName' in pool '$poolName'"))
-        .balances(start, end, timePeriod)
-    }
-  }
-
   def synchronizeAccount(accountIndex: Int, user: User, poolName: String, walletName: String): Future[Seq[SynchronizationResult]] ={
      defaultDaemonCache.syncOperations(user.pubKey, poolName, walletName, accountIndex)
+  }
+
+  def getAccount(accountIndex: Int, user: User, poolName: String, walletName: String): Future[Option[Account]] = {
+    defaultDaemonCache.getAccount(accountIndex, user.pubKey, poolName, walletName)
   }
 
   def accountFreshAddresses(accountIndex: Int, user: User, poolName: String, walletName: String): Future[Seq[String]] = {

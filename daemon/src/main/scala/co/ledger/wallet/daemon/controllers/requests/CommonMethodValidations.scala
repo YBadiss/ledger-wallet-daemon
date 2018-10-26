@@ -40,11 +40,11 @@ object CommonMethodValidations {
       val endDate = DATE_FORMATTER.parse(end)
       ValidationResult.validate(startDate.before(endDate), s"Start time '$start' must be earlier than end time '$end'")
     } catch {
-      case _: ParseException => ValidationResult.validate(false, s"Invalid time format, it must be 'yyyy-MM-dd'T'HH:mm:ss'Z''")
+      case _: ParseException => ValidationResult.validate(false, "Invalid time format, it must be 'yyyy-MM-dd'T'HH:mm:ss'Z''")
     }
   }
 
-  private val DATE_FORMATTER: SimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ENGLISH)
+  val DATE_FORMATTER: SimpleDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ENGLISH)
 
   private val REGEX = "([0-9a-zA-Z]+[_]?)+[0-9a-zA-Z]+".r
 }

@@ -10,22 +10,22 @@ import com.twitter.finagle.http.{Response, Status}
 
 class AccountsApiTest extends APIFeatureTest {
 
-  test("AccountsApi#Get balance history") {
+  test("AccountsApi#Get history") {
     createPool("balance_pool")
     assertWalletCreation("balance_pool", "account_wallet", "bitcoin", Status.Ok)
     assertCreateAccount(CORRECT_BODY, "balance_pool", "account_wallet", Status.Ok)
-    balances("balance_pool", "account_wallet", 0, "2017-10-12T13:38:23Z", "2018-10-12T13:38:23Z", TimePeriod.DAY.toString, Status.Ok)
+    history("balance_pool", "account_wallet", 0, "2017-10-12T13:38:23Z", "2018-10-12T13:38:23Z", TimePeriod.DAY.toString, Status.Ok)
     deletePool("balance_pool")
   }
 
-  test("AccountsApi#Get balance history bad requests") {
+  test("AccountsApi#Get history bad requests") {
     createPool("balance_pool")
     assertWalletCreation("balance_pool", "account_wallet", "bitcoin", Status.Ok)
     assertCreateAccount(CORRECT_BODY, "balance_pool", "account_wallet", Status.Ok)
-    balances("balance_pool", "account_wallet", 0, "2017-10-12", "2018-10-12T13:38:23Z", TimePeriod.DAY.toString, Status.BadRequest)
-    balances("balance_pool", "account_wallet", 0, "2017-10-12T13:38:23Z", "2018-10-12", TimePeriod.DAY.toString, Status.BadRequest)
-    balances("balance_pool", "account_wallet", 0, "2017-10-12T13:38:23Z", "2018-10-12T13:38:23Z", "TIME", Status.BadRequest)
-    balances("balance_pool", "account_wallet", 0, "2018-11-12T13:38:23Z", "2018-10-12T13:38:23Z", TimePeriod.DAY.toString, Status.BadRequest)
+    history("balance_pool", "account_wallet", 0, "2017-10-12", "2018-10-12T13:38:23Z", TimePeriod.DAY.toString, Status.BadRequest)
+    history("balance_pool", "account_wallet", 0, "2017-10-12T13:38:23Z", "2018-10-12", TimePeriod.DAY.toString, Status.BadRequest)
+    history("balance_pool", "account_wallet", 0, "2017-10-12T13:38:23Z", "2018-10-12T13:38:23Z", "TIME", Status.BadRequest)
+    history("balance_pool", "account_wallet", 0, "2018-11-12T13:38:23Z", "2018-10-12T13:38:23Z", TimePeriod.DAY.toString, Status.BadRequest)
     deletePool("balance_pool")
   }
 
@@ -171,9 +171,9 @@ class AccountsApiTest extends APIFeatureTest {
     deletePool("op_pool_mal")
   }
 
-  private def balances(poolName: String, walletName: String, accountIndex: Int, start: String, end: String, timeInterval: String, expected: Status): Response = {
+  private def history(poolName: String, walletName: String, accountIndex: Int, start: String, end: String, timeInterval: String, expected: Status): Response = {
     server.httpGet(
-      path = s"/pools/$poolName/wallets/$walletName/accounts/$accountIndex/balances?start=$start&end=$end&time_interval=$timeInterval",
+      path = s"/pools/$poolName/wallets/$walletName/accounts/$accountIndex/history?start=$start&end=$end&time_interval=$timeInterval",
       headers = defaultHeaders, andExpect = expected)
   }
 

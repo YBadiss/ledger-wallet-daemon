@@ -1,9 +1,10 @@
 package co.ledger.wallet.daemon.controllers
 
-import java.util.UUID
+import java.util.{Date, UUID}
 
-import co.ledger.core.TimePeriod
+import co.ledger.core.{OperationType, TimePeriod}
 import co.ledger.wallet.daemon.async.MDCPropagatingExecutionContext
+import co.ledger.wallet.daemon.controllers.requests.CommonMethodValidations.DATE_FORMATTER
 import co.ledger.wallet.daemon.controllers.requests.{CommonMethodValidations, RichRequest}
 import co.ledger.wallet.daemon.controllers.responses.ResponseSerializer
 import co.ledger.wallet.daemon.exceptions._
@@ -188,12 +189,17 @@ class AccountsController @Inject()(accountsService: AccountsService) extends Con
   }
 
   /**
-    * Return the balances history in the order of the starting time to the end time.
+    * Return the balances and operation counts history in the order of the starting time to the end time.
     *
     */
-  get("/pools/:pool_name/wallets/:wallet_name/accounts/:account_index/balances") { request: BalanceHistoryRequest =>
-    info(s"Get balance history $request")
-    accountsService.balances(request.start, request.end, request.timePeriod, request.account_index, request.user, request.pool_name, request.wallet_name).recover {
+  get("/pools/:pool_name/wallets/:wallet_name/accounts/:account_index/history") { request: HistoryRequest =>
+    info(s"Get history $request")
+    (for {
+      accountOpt <- accountsService.getAccount(request.account_index, request.user, request.pool_name, request.wallet_name)
+      account = accountOpt.getOrElse(throw AccountNotFoundException(request.account_index))
+      balances <- account.balances(request.start, request.end, request.timePeriod)
+      operationCounts <- account.operationsCounts(request.startDate, request.endDate, request.timePeriod)
+    } yield HistoryResponse(balances, operationCounts)).recover {
       case _: WalletPoolNotFoundException => responseSerializer.serializeBadRequest(
         Map("response" -> "Wallet pool doesn't exist", "pool_name" -> request.pool_name),
         response)
@@ -293,7 +299,8 @@ object AccountsController {
     override def toString: String = s"$request, Parameters(user: ${user.id}, pool_name: $pool_name, wallet_name: $wallet_name, account_index: $account_index)"
   }
 
-  case class BalanceHistoryRequest(
+  case class HistoryResponse(balances: List[Long], operationCounts: List[Map[OperationType, Int]])
+  case class HistoryRequest(
                                     @RouteParam override val pool_name: String,
                                     @RouteParam override val wallet_name: String,
                                     @RouteParam override val account_index: Int,
@@ -302,6 +309,8 @@ object AccountsController {
                                   ) extends BaseSingleAccountRequest(request) {
 
     def timePeriod: TimePeriod = TimePeriod.valueOf(timeInterval)
+    def startDate: Date = DATE_FORMATTER.parse(start)
+    def endDate: Date = DATE_FORMATTER.parse(end)
 
     @MethodValidation
     def validateDate: ValidationResult = CommonMethodValidations.validateDates(start, end)
