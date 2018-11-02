@@ -124,8 +124,8 @@ class Pool(private val coreP: core.WalletPool, val id: Long) extends Logging wit
             .toString())
           coreP.getWallet(walletName).flatMap { coreW => startListen(Wallet.newInstance(coreW, self)) }
       }
-    }.recover {
-      case _: CoreCurrencyNotFoundException => throw CurrencyNotFoundException(currencyName)
+    }.recoverWith {
+      case _: CoreCurrencyNotFoundException => Future.failed(CurrencyNotFoundException(currencyName))
     }
   }
 

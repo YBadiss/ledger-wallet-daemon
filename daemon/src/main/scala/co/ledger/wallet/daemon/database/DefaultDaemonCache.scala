@@ -6,8 +6,7 @@ import javax.inject.Singleton
 
 import co.ledger.wallet.daemon.async.MDCPropagatingExecutionContext
 import co.ledger.wallet.daemon.configurations.DaemonConfiguration
-import co.ledger.wallet.daemon.exceptions
-import co.ledger.wallet.daemon.exceptions.{AccountNotFoundException, UserNotFoundException, WalletPoolAlreadyExistException, WalletPoolNotFoundException}
+import co.ledger.wallet.daemon.exceptions._
 import co.ledger.wallet.daemon.models.Account.{Account, Derivation}
 import co.ledger.wallet.daemon.models._
 import co.ledger.wallet.daemon.schedulers.observers.{NewOperationEventReceiver, SynchronizationResult}
@@ -38,14 +37,14 @@ class DefaultDaemonCache() extends DaemonCache with Logging {
   override def syncOperations(pubKey: String, poolName: String): Future[Seq[SynchronizationResult]] = {
     getWalletPool(pubKey, poolName).flatMap({
       case Some(pool) => pool.sync()
-      case None => throw WalletPoolNotFoundException(poolName)
+      case None => Future.failed(WalletPoolNotFoundException(poolName))
     })
   }
 
   override def syncOperations(pubKey: String, poolName: String, walletName: String, accountIndex: Int): Future[Seq[SynchronizationResult]] = {
     getAccount(accountIndex, pubKey, poolName, walletName).flatMap({
       case Some(account) => account.sync(poolName).map(Seq(_))
-      case None => throw AccountNotFoundException(accountIndex)
+      case None => Future.failed(AccountNotFoundException(accountIndex))
     })
   }
 
@@ -119,11 +118,17 @@ class DefaultDaemonCache() extends DaemonCache with Logging {
   }
 
   private def getHardWallet(pubKey: String, poolName: String, walletName: String): Future[Wallet] = {
-    getWallet(walletName, poolName, pubKey).map { wO => wO.getOrElse(throw exceptions.WalletNotFoundException(walletName)) }
+    getWallet(walletName, poolName, pubKey).flatMap {
+      case Some(w) => Future(w)
+      case None => Future.failed(WalletNotFoundException(walletName))
+    }
   }
 
   private def getHardPool(pubKey: String, poolName: String): Future[Pool] = {
-    getWalletPool(pubKey, poolName).map { pO => pO.getOrElse(throw WalletPoolNotFoundException(poolName)) }
+    getWalletPool(pubKey, poolName).flatMap {
+      case Some(p) => Future(p)
+      case None => Future.failed(WalletPoolNotFoundException(poolName))
+    }
   }
 
   def getUser(pubKey: String): Future[Option[User]] = {
@@ -134,7 +139,10 @@ class DefaultDaemonCache() extends DaemonCache with Logging {
   }
 
   private def getHardUser(pubKey: String): Future[User] = {
-    getUser(pubKey).map { uO => uO.getOrElse(throw UserNotFoundException(pubKey)) }
+    getUser(pubKey).flatMap {
+      case Some(u) => Future(u)
+      case None => Future.failed(UserNotFoundException(pubKey))
+    }
   }
 
   def getUsers: Future[Seq[User]] = {
@@ -227,12 +235,18 @@ class DefaultDaemonCache() extends DaemonCache with Logging {
 
   def getHardAccount(pubKey: String, poolName: String, walletName: String, accountIndex: Int): Future[Account] = {
     getHardWallet(pubKey, poolName, walletName).flatMap { wallet =>
-      wallet.account(accountIndex).map { aO => aO.getOrElse(throw AccountNotFoundException(accountIndex)) }
+      wallet.account(accountIndex).flatMap {
+        case Some(a) => Future(a)
+        case None => Future.failed(AccountNotFoundException(accountIndex))
+      }
     }
   }
 
   private def getHardPool(user: User, poolName: String): Future[Pool] = {
-    user.pool(poolName).map { pO => pO.getOrElse(throw WalletPoolNotFoundException(poolName)) }
+    user.pool(poolName).flatMap {
+      case Some(p) => Future(p)
+      case None => Future.failed(WalletPoolNotFoundException(poolName))
+    }
   }
 
 }

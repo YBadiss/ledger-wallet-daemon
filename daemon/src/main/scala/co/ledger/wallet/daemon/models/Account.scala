@@ -46,7 +46,7 @@ object Account {
     def signTransaction(rawTx: Array[Byte], signatures: Seq[(Array[Byte], Array[Byte])]): Future[String] = {
       val tx = wallet.currency.parseUnsignedTransaction(rawTx)
 
-      if (tx.getInputs.size != signatures.size) throw new scala.IllegalArgumentException("Signatures and transaction inputs size not matching")
+      if (tx.getInputs.size != signatures.size) Future.failed(new scala.IllegalArgumentException("Signatures and transaction inputs size not matching"))
       else if (isBitcoin) {
         tx.getInputs.asScala.zipWithIndex.foreach { case (input, index) =>
           input.pushToScriptSig(signatures(index)._1) // signature
@@ -54,7 +54,7 @@ object Account {
         }
         debug(s"transaction after sign '${HexUtils.valueOf(tx.serialize())}'")
         coreA.asBitcoinLikeAccount().broadcastTransaction(tx)
-      } else throw new UnsupportedOperationException("Account type not supported, can't sign transaction")
+      } else Future.failed(new UnsupportedOperationException("Account type not supported, can't sign transaction"))
     }
 
     def createTransaction(transactionInfo: TransactionInfo): Future[TransactionView] = {
@@ -79,7 +79,7 @@ object Account {
               Bitcoin.newUnsignedTransactionView(t, fees.toLong)
             }
           }
-        } else throw new UnsupportedOperationException("Account type not supported, can't create transaction")
+        } else Future.failed(new UnsupportedOperationException("Account type not supported, can't create transaction"))
     }
 
     def operation(uid: String, fullOp: Int): Future[Option[Operation]] = {
