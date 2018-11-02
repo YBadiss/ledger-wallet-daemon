@@ -24,7 +24,6 @@ class Currency(coreC: core.Currency) {
 
   def parseUnsignedTransaction(rawTx: Array[Byte]): core.BitcoinLikeTransaction = family match {
     case CurrencyFamily.BITCOIN => core.BitcoinLikeTransactionBuilder.parseRawUnsignedTransaction(coreC, rawTx)
-    case _ => throw new UnsupportedOperationException(s"No parser found for currency family '$family'")
   }
 
 
@@ -37,7 +36,6 @@ class Currency(coreC: core.Currency) {
 
   private def newNetworkParamsView(coreCurrency: core.Currency, currencyFamily: CurrencyFamily): NetworkParamsView = currencyFamily match {
     case CurrencyFamily.BITCOIN => Bitcoin.newNetworkParamsView(coreCurrency.getBitcoinLikeNetworkParameters)
-    case _ => throw new UnsupportedOperationException
   }
 
   override def equals(that: Any): Boolean = {

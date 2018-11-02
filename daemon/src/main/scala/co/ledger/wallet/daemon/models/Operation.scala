@@ -58,7 +58,6 @@ class Operation(private val coreO: core.Operation, private val account: Account,
     if(operation.isComplete) {
       currencyFamily match {
         case CurrencyFamily.BITCOIN => Bitcoin.newTransactionView(operation.asBitcoinLikeOperation().getTransaction)
-        case _ => throw new UnsupportedOperationException
       }
     } else { null }
   }
