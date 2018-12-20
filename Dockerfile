@@ -15,7 +15,7 @@ ENV ADMIN_PORT 0
 ENV STAGE dev
 
 WORKDIR /app
-COPY --from=builder /build/daemon/target/universal/stage .
+COPY --from=builder /build/target/universal/stage .
 COPY ./docker/install_run_deps.sh .
 COPY ./docker/run.sh .
 RUN ./install_run_deps.sh && rm -f install_run_deps.sh
