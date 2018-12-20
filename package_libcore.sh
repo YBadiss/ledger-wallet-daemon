@@ -7,7 +7,7 @@ pkg_dir="$(mktemp -d)"
 current_dir="$(pwd)"
 build_dir="${current_dir}/lib-ledger-core-build"
 libcore_dir="${current_dir}/lib-ledger-core"
-scala_api_dir="${current_dir}/src/main/scala/co/ledger/core"
+scala_api_dir="${current_dir}/src/main/scala/co/ledger/core/implicits"
 java_api_dir="${current_dir}/src/main/java/co/ledger/core"
 dest_dir="${current_dir}/lib"
 
@@ -32,8 +32,10 @@ rm -rf -- ${pkg_dir}
 echo "Libraries updated"
 
 echo "Updating APIs"
+mkdir -p ${java_api_dir}
 rm -f -- ${java_api_dir}/*
 cp ${libcore_dir}/api/core/java/* ${java_api_dir}
-rm -f -- ${scala_api_dir}/implicits/*
-cp ${libcore_dir}/api/core/scala/* ${scala_api_dir}/implicits/
+mkdir -p ${scala_api_dir}
+rm -f -- ${scala_api_dir}/*
+cp ${libcore_dir}/api/core/scala/* ${scala_api_dir}
 echo "API updated"
