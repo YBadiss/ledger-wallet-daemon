@@ -10,6 +10,7 @@ import com.twitter.finatra.json.FinatraObjectMapper
 import javax.inject.Singleton
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.Try
 
 /**
   * Client for request to blockchain explorers.
@@ -38,7 +39,8 @@ class ApiClient(implicit val ec: ExecutionContext) {
     val request = Request(Method.Get, s"/blockchain/v3/addresses/${recipient.toLowerCase}/estimate-gas-limit")
       .host(host)
     service(request).map { response =>
-      mapper.parse[GasLimit](response).limit
+      // We handle both cases, with `estimated_gas_limit` or `gas_limit` fields to support both old and new explorers.
+      Try(mapper.parse[GasLimit](response).limit).getOrElse(mapper.parse[EstimatedGasLimit](response).limit)
     }.asScala
   }
 
@@ -105,5 +107,6 @@ object ApiClient {
   }
 
   case class GasPrice(@JsonProperty("gas_price") price: BigInt)
-  case class GasLimit(@JsonProperty("estimated_gas_limit") limit: BigInt)
+  case class EstimatedGasLimit(@JsonProperty("estimated_gas_limit") limit: BigInt)
+  case class GasLimit(@JsonProperty("gas_limit") limit: BigInt)
 }
