@@ -76,17 +76,12 @@ object DaemonCacheModule extends TwitterModule {
     startSynchronization()
   }
 
-  private def updateWalletConfig(): Future[Seq[Seq[Wallet]]] = {
-    (for {
+  private def updateWalletConfig(): Future[Unit] = {
+    for {
       users <- provideDaemonCache.getUsers
-      pools <- Future.sequence(users.map(_.pools())).map(_.flatten)
-    } yield Future.sequence(
-      pools.map { pool =>
-        pool.wallets.map { wallets =>
-          Future.sequence(wallets.map { wallet =>
-            pool.updateWalletConfig(wallet)
-          })
-        }.flatten
-      })).flatten
+      pools <- Future.traverse(users)(_.pools()).map(_.flatten)
+      poolWallets <- Future.traverse(pools)(pool => pool.wallets.map((pool, _)))
+      _ <- Future.sequence(poolWallets.flatMap { case (pool, wallets) => wallets.map(pool.updateWalletConfig) })
+    } yield ()
   }
 }
